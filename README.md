@@ -20,7 +20,7 @@ RPC. For an example of working ONC RPC code, please check the uploaded
 code on elearning (also demo-ed in class) at: Homework/stringrpc.tar .
 
 -----------------------------------------------------------------------------
-</b>Testing</b><br>
+<b>Testing</b><br>
 This assignment will be tested on the instructor's linux servers: lenss-
 compX.cse.tamu.edu, where X=5, 3 and 1. So, please make sure you test
 your code on those servers.
