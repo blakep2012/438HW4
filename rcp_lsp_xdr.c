@@ -3,7 +3,7 @@
  * It was generated using rpcgen.
  */
 
-#include "lsp.h"
+#include "rcp_lsp.h"
 
 bool_t
 xdr_Client (XDR *xdrs, Client *objp)
