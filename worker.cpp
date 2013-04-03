@@ -94,6 +94,10 @@ int main(int argc, char* argv[]){
     //lsp_set_epoch_cnt(20); // 20 epochs (2 seconds) with no response
     
 	client = clnt_create (host, rpcCracker, CAVERLEE4PRES, "udp");
+	if (client == NULL) {
+		clnt_pcreateerror (host);
+		exit (1);
+	}
     /*lsp_client *client = lsp_client_create(argv[1], port);
     if(!client){
         // the connection to the server could not be made
