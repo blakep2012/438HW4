@@ -2,6 +2,7 @@
 
 #include "lsp_client.h"
 #include <openssl/sha.h>
+#include "rpcCracker.h"
 
 void getNext(char *pass, int len){
     // given a current password, compute the next one to try and
@@ -92,12 +93,13 @@ int main(int argc, char* argv[]){
     //lsp_set_epoch_lth(0.1); // 100 ms per epoch = fast resends on failure
     //lsp_set_epoch_cnt(20); // 20 epochs (2 seconds) with no response
     
-    lsp_client *client = lsp_client_create(argv[1], port);
+	client = clnt_create (host, rpcCracker, CAVERLEE4PRES, "udp");
+    /*lsp_client *client = lsp_client_create(argv[1], port);
     if(!client){
         // the connection to the server could not be made
         printf("The connection to the server failed. Exiting...\n");
         return -1;
-    }
+    }*/
     
     printf("The connection to the server has been established\n");
     
