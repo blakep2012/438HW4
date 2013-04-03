@@ -3,7 +3,7 @@
  * It was generated using rpcgen.
  */
 
-#include "rcp_lsp.h"
+#include "rpc_lsp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <rpc/pmap_clnt.h>

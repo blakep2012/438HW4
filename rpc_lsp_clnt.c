@@ -4,7 +4,7 @@
  */
 
 #include <memory.h> /* for memset */
-#include "rcp_lsp.h"
+#include "rpc_lsp.h"
 
 /* Default timeout can be changed using clnt_control() */
 static struct timeval TIMEOUT = { 25, 0 };

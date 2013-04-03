@@ -3,8 +3,8 @@
  * It was generated using rpcgen.
  */
 
-#ifndef _RCP_LSP_H_RPCGEN
-#define _RCP_LSP_H_RPCGEN
+#ifndef _RPC_LSP_H_RPCGEN
+#define _RPC_LSP_H_RPCGEN
 
 #include <rpc/rpc.h>
 
@@ -76,4 +76,4 @@ extern bool_t xdr_lsp_message ();
 }
 #endif
 
-#endif /* !_RCP_LSP_H_RPCGEN */
+#endif /* !_RPC_LSP_H_RPCGEN */

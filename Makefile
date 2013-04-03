@@ -1,31 +1,25 @@
-CC = gcc
+CC = g++
 CFLAGS = -g -DRPC_SVC_FG
 
-all: client server
+rpc_lsp_svc.o: rpc_lsp.h
+	$(CC) $(CFLAGS) -c rpc_lsp_svc.c
 
-client: client.o rcp_lsp_clnt.o rcp_lsp_xdr.o
-	$(CC) $(CFLAGS) -o client client.o rcp_lsp_clnt.o rcp_lsp_xdr.o -lnsl
+rpc_lsp_clnt.o: rpc_lsp.h
+	$(CC) $(CFLAGS) -c rpc_lsp_clnt.c
 
-server: server.o rcp_lsp_svc.o  rcp_lsp_xdr.o
-	$(CC) $(CFLAGS) -o server server.o rcp_lsp_svc.o rcp_lsp_xdr.o -lnsl
+rpc_lsp_xdr.o: rpc_lsp.h
+	$(CC) $(CFLAGS) -c rpc_lsp_xdr.c
 
-rcp_lsp_svc.o: rcp_lsp.h
-	$(CC) $(CFLAGS) -c rcp_lsp_svc.c
+server.o: rpc_lsp.h
+	$(CC) $(CFLAGS) -c server.cpp
 
-rcp_lsp_clnt.o: rcp_lsp.h
-	$(CC) $(CFLAGS) -c rcp_lsp_clnt.c
+client.o: rpc_lsp.h
+	$(CC) $(CFLAGS) -c client.cpp
 
-rcp_lsp_xdr.o: rcp_lsp.h
-	$(CC) $(CFLAGS) -c rcp_lsp_xdr.c
-
-server.o: server.c rcp_lsp.h
-	$(CC) $(CFLAGS) -c server.c
-
-client.o: client.c rcp_lsp.h
-	$(CC) $(CFLAGS) -c client.c
-
-rcp_lsp.h: rcp_lsp.x
-	rpcgen -C rcp_lsp.x
+rpc_lsp.h: rpc_lsp.x
+	rpcgen -C rpc_lsp.x
+	rpcgen -Sc rpc_lsp.x -o client.cpp
+	rpcgen -Ss rpc_lsp.x -o server.cpp
 
 clean:
-	rm -f client client.o server server.o rcp_lsp_xdr.* rcp_lsp_clnt.* rcp_lsp_svc.* rcp_lsp.h
+	rm -f client.cpp client.o server.cpp server.o rpc_lsp_xdr.* rpc_lsp_clnt.* rpc_lsp_svc.* rpc_lsp.h
