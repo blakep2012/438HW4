@@ -65,9 +65,9 @@ int main(int argc, char* argv[]){
     
     // send password crack request to server
     //lsp_client_write(client,(uint8_t*)buffer,buflen+1);
-	write_1(&buffer, client);
+	int id = write_1(&buffer, client);
     //int bytes_read = lsp_client_read(client,(uint8_t*)buffer);
-	buffer = read_1(client);
+	buffer = read_1(id, client);
 	bytes_read = buffer.length();
     if(bytes_read == 0){
         printf("Disconnected\n");

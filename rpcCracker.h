@@ -19,8 +19,8 @@ extern "C" {
 
 #if defined(__STDC__) || defined(__cplusplus)
 #define read 1
-extern  char ** read_1(void *, CLIENT *);
-extern  char ** read_1_svc(void *, struct svc_req *);
+extern  char ** read_1(int *, CLIENT *);
+extern  char ** read_1_svc(int *, struct svc_req *);
 #define write 2
 extern  int * write_1(char **, CLIENT *);
 extern  int * write_1_svc(char **, struct svc_req *);

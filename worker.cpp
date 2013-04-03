@@ -111,10 +111,11 @@ int main(int argc, char* argv[]){
     char buffer[1024];
     sprintf(buffer,"j");
     //lsp_client_write(client,(uint8_t*)buffer,2);
-	write_1(&buffer, client);
+	int id = write_1(&buffer, client);
 
     // wait for request chunks and then processes them
-    while(int bytes_read = lsp_client_read(client,(uint8_t*)buffer)){
+    //while(int bytes_read = lsp_client_read(client,(uint8_t*)buffer)){
+	while(int bytes_read = read_1(id, client).length()){
         // we have received a crack request. let's parse it
         if(buffer[0] == 'c'){
             char *hash = strtok(buffer+2," ");

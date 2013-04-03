@@ -12,7 +12,7 @@ rpccracker_1(char *host)
 {
 	CLIENT *clnt;
 	char * *result_1;
-	char *read_1_arg;
+	int  read_1_arg;
 	int  *result_2;
 	char * write_1_arg;
 
@@ -24,7 +24,7 @@ rpccracker_1(char *host)
 	}
 #endif	/* DEBUG */
 
-	result_1 = read_1((void*)&read_1_arg, clnt);
+	result_1 = read_1(&read_1_arg, clnt);
 	if (result_1 == (char **) NULL) {
 		clnt_perror (clnt, "call failed");
 	}

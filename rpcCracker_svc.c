@@ -20,6 +20,7 @@ static void
 rpccracker_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
+		int read_1_arg;
 		char *write_1_arg;
 	} argument;
 	char *result;
@@ -32,7 +33,7 @@ rpccracker_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		return;
 
 	case read:
-		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_argument = (xdrproc_t) xdr_int;
 		_xdr_result = (xdrproc_t) xdr_wrapstring;
 		local = (char *(*)(char *, struct svc_req *)) read_1_svc;
 		break;
