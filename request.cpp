@@ -1,5 +1,6 @@
 #include <iostream>
 #include "lsp_client.h"
+#include "rpcCracker.h"
 
 int main(int argc, char* argv[]){
     // randomization seed requested by Dr. Stoleru
@@ -35,11 +36,16 @@ int main(int argc, char* argv[]){
     //lsp_set_epoch_cnt(20); // 20 epochs (2 seconds) with no response
     
     // create a lsp client and connect to server
-    lsp_client *client = lsp_client_create(argv[1], port);
+    /*lsp_client *client = lsp_client_create(argv[1], port);
     if(!client){
         printf("The connection to the server failed. Exiting...\n");
         return -1;
-    }
+    }*/
+	client = clnt_create (host, rpcCracker, CAVERLEE4PRES, "udp");
+	if (client == NULL) {
+		clnt_pcreateerror (host);
+		exit (1);
+	}
     
     //printf("The connection to the server has been established\n");
     
@@ -58,8 +64,11 @@ int main(int argc, char* argv[]){
     //printf("sending [%d]: %s\n", buflen, buffer);
     
     // send password crack request to server
-    lsp_client_write(client,(uint8_t*)buffer,buflen+1);
-    int bytes_read = lsp_client_read(client,(uint8_t*)buffer);
+    //lsp_client_write(client,(uint8_t*)buffer,buflen+1);
+	write_1(&buffer, client);
+    //int bytes_read = lsp_client_read(client,(uint8_t*)buffer);
+	buffer = read_1(client);
+	bytes_read = buffer.length();
     if(bytes_read == 0){
         printf("Disconnected\n");
     } else {
@@ -70,6 +79,7 @@ int main(int argc, char* argv[]){
         else
             printf("Unknown response: %s\n",buffer);
     }
-    lsp_client_close(client);    
+    //lsp_client_close(client);   
+	clnt_destroy(client);
     return 0;
 }

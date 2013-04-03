@@ -106,7 +106,8 @@ int main(int argc, char* argv[]){
     // send join message to the server
     char buffer[1024];
     sprintf(buffer,"j");
-    lsp_client_write(client,(uint8_t*)buffer,2);
+    //lsp_client_write(client,(uint8_t*)buffer,2);
+	write_1(&buffer, client);
 
     // wait for request chunks and then processes them
     while(int bytes_read = lsp_client_read(client,(uint8_t*)buffer)){
@@ -119,7 +120,8 @@ int main(int argc, char* argv[]){
             if(strlen(hash) != 40) {
                 printf("Invalid hash: %s\n",hash);
                 bufLen = sprintf(buffer,"x"); // send "not found" back to server
-                lsp_client_write(client,(uint8_t*)buffer,bufLen+1);
+                //lsp_client_write(client,(uint8_t*)buffer,bufLen+1);
+				write_1(&buffer, client);
                 continue;
             }
 
@@ -136,12 +138,14 @@ int main(int argc, char* argv[]){
                 bufLen = sprintf(buffer, "x");
 
             // send the response back to the server
-            lsp_client_write(client,(uint8_t*)buffer,bufLen+1);
+            //lsp_client_write(client,(uint8_t*)buffer,bufLen+1);
+			write_1(&buffer, client);
         } else {
             printf("Unknown message format: %s\n",buffer); 
         }
     }
     // the connection to the server was lost
-    lsp_client_close(client);    
+    //lsp_client_close(client);    
+	clnt_destroy(client);
     return 0;
 }

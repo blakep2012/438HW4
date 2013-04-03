@@ -3,7 +3,7 @@
  * It was generated using rpcgen.
  */
 
-#include "rpc_lsp.h"
+#include "rpcCracker.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <rpc/pmap_clnt.h>
@@ -17,10 +17,10 @@
 #endif
 
 static void
-lsp_2(struct svc_req *rqstp, register SVCXPRT *transp)
+rpccracker_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		lsp_client write_2_arg;
+		char *write_1_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -31,16 +31,16 @@ lsp_2(struct svc_req *rqstp, register SVCXPRT *transp)
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
 
-	case write:
-		_xdr_argument = (xdrproc_t) xdr_lsp_client;
-		_xdr_result = (xdrproc_t) xdr_void;
-		local = (char *(*)(char *, struct svc_req *)) write_2_svc;
-		break;
-
 	case read:
 		_xdr_argument = (xdrproc_t) xdr_void;
-		_xdr_result = (xdrproc_t) xdr_lsp_message;
-		local = (char *(*)(char *, struct svc_req *)) read_2_svc;
+		_xdr_result = (xdrproc_t) xdr_wrapstring;
+		local = (char *(*)(char *, struct svc_req *)) read_1_svc;
+		break;
+
+	case write:
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) write_1_svc;
 		break;
 
 	default:
@@ -68,15 +68,15 @@ main (int argc, char **argv)
 {
 	register SVCXPRT *transp;
 
-	pmap_unset (LSP, INITIAL_VERS);
+	pmap_unset (rpcCracker, CAVERLEE4PRES);
 
 	transp = svcudp_create(RPC_ANYSOCK);
 	if (transp == NULL) {
 		fprintf (stderr, "%s", "cannot create udp service.");
 		exit(1);
 	}
-	if (!svc_register(transp, LSP, INITIAL_VERS, lsp_2, IPPROTO_UDP)) {
-		fprintf (stderr, "%s", "unable to register (LSP, INITIAL_VERS, udp).");
+	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_1, IPPROTO_UDP)) {
+		fprintf (stderr, "%s", "unable to register (rpcCracker, CAVERLEE4PRES, udp).");
 		exit(1);
 	}
 
@@ -85,8 +85,8 @@ main (int argc, char **argv)
 		fprintf (stderr, "%s", "cannot create tcp service.");
 		exit(1);
 	}
-	if (!svc_register(transp, LSP, INITIAL_VERS, lsp_2, IPPROTO_TCP)) {
-		fprintf (stderr, "%s", "unable to register (LSP, INITIAL_VERS, tcp).");
+	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_1, IPPROTO_TCP)) {
+		fprintf (stderr, "%s", "unable to register (rpcCracker, CAVERLEE4PRES, tcp).");
 		exit(1);
 	}
 

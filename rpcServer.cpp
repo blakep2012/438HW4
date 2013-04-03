@@ -6,10 +6,10 @@
 
 #include "rpcCracker.h"
 
-int *
-read_1_svc(Message *argp, struct svc_req *rqstp)
+char **
+read_1_svc(void *argp, struct svc_req *rqstp)
 {
-	static int  result;
+	static char * result;
 
 	/*
 	 * insert server code here
@@ -19,7 +19,7 @@ read_1_svc(Message *argp, struct svc_req *rqstp)
 }
 
 int *
-write_1_svc(Message *argp, struct svc_req *rqstp)
+write_1_svc(char **argp, struct svc_req *rqstp)
 {
 	static int  result;
 

@@ -11,10 +11,10 @@ void
 rpccracker_1(char *host)
 {
 	CLIENT *clnt;
-	int  *result_1;
-	Message  read_1_arg;
+	char * *result_1;
+	char *read_1_arg;
 	int  *result_2;
-	Message  write_1_arg;
+	char * write_1_arg;
 
 #ifndef	DEBUG
 	clnt = clnt_create (host, rpcCracker, CAVERLEE4PRES, "udp");
@@ -24,8 +24,8 @@ rpccracker_1(char *host)
 	}
 #endif	/* DEBUG */
 
-	result_1 = read_1(&read_1_arg, clnt);
-	if (result_1 == (int *) NULL) {
+	result_1 = read_1((void*)&read_1_arg, clnt);
+	if (result_1 == (char **) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
 	result_2 = write_1(&write_1_arg, clnt);
