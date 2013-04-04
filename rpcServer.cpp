@@ -5,21 +5,24 @@
  */
 
 #include "rpcCracker.h"
+
 typedef struct {
     uint32_t requester;
     char *hash;
     char *lower;
     char *upper;
 } request;
+
 // keeps track of available worker who are not currently wrokinrg
-    std::queue<uint32_t> inactive_workers; 
-    
-    // keeps track of active requests sent to worker
-    std::map<uint32_t, request*> active_requests;
+std::queue<uint32_t> inactive_workers; 
 
-    // keeps track of next request to be worked on
-    std::queue<request*> next_req_queue;
+// keeps track of active requests sent to worker
+std::map<uint32_t, request*> active_requests;
 
+// keeps track of next request to be worked on
+std::queue<request*> next_req_queue;
+
+std::queue<string> pwds;
    
 static int rcounter=-1;
 static int wcounter=0;
@@ -97,223 +100,231 @@ read_1_svc(void *argp, struct svc_req *rqstp)
 }
 
 int *
-write_1_svc(char **argp, struct svc_req *rqstp)
-{
+write_1_svc(char **argp, struct svc_req *rqstp) {
+	
 	static int  result;
-
-
-
-		int returned_id;
+	int returned_id;
 		
-		
-        // wait for data from clients
-        int bytes_read = sizeof(argp)
-        char* payload = argp;
-        // if bytes_read > 0 then there is data to be read
-        // if bytes_read == 0 then a client disconnected
-        if(bytes_read) {
-            printf("[%d]: %s\n",returned_id, payload);
-            if(payload[0] == 'j') { // worker joined the server
-            	returned_id = wcounter;
-				wcounter++;
-                inactive_workers.push(returned_id); // add to inactive_workers
-            } else if(payload[0] == 'x') { // worker did not find correct password for request
-                request *req = active_requests[returned_id]; 
-                // request may have been deleted if password was already found or
-                // the request client disconnected
-                if (req != NULL) {
-                    // delete request for active_requests
-                    active_requests.erase(returned_id);
+    // wait for data from clients
+    int bytes_read = sizeof(argp)
+    char* payload = argp;
 
-                    // find out if this is the last request chuck for password crack request
-                    bool finished = true;
-                    for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
-                        it != active_requests.end(); it++) {
-                        request *act_req = it->second;
-                        if(act_req != NULL && act_req->requester == req->requester) {
-                            finished = false;
-                            break;
-                        }
-                    }
-                    if(finished) {
-                        for(int k = next_req_queue.size(); k > 0; k--) {
-                            request *next_req = next_req_queue.front();
-                            next_req_queue.pop();
-                            if(next_req->requester == req->requester) {
-                                finished = false;
-                            } 
-                            next_req_queue.push(next_req);
-                        }
-                    }
+    // if bytes_read > 0 then there is data to be read
+    // if bytes_read == 0 then a client disconnected
 
-                    // if this is the last request then forward password not found
-                    // message to the request client and delete request data
-                    if(finished) {
-                        lsp_server_write(server,payload,bytes_read,req->requester);
-                        delete[] req->hash;
-                    }
-                    delete[] req->lower;
-                    delete[] req->upper;
-                    delete req;
-                }
-                inactive_workers.push(returned_id);
-            } else if(payload[0] == 'f') { // worker found the correct password
-                request *req = active_requests[returned_id];
-                
-                // send correct password to request client
-                lsp_server_write(server,payload,bytes_read,req->requester);
-                
+    if(bytes_read) {
+        //printf("[%d]: %s\n",returned_id, payload);
+        if(payload[0] == 'j') { // worker joined the server
+        	returned_id = wcounter;
+			wcounter++;
+            inactive_workers.push(returned_id); // add to inactive_workers
+
+            return returned_id;
+        } else if(payload[0] == 'x') { // worker did not find correct password for request
+
+        	returned_id = payload[1];
+            request *req = active_requests[returned_id]; 
+            // request may have been deleted if password was already found or
+            // the request client disconnected
+            if (req != NULL) {
+                // delete request for active_requests
                 active_requests.erase(returned_id);
-                
-                // delete all corresponding request data in next_req_queue
-                for(int k = next_req_queue.size(); k > 0; k--) {
-                    request *next_req = next_req_queue.front();
-                    next_req_queue.pop();
-                    if(next_req->requester == req->requester) {
-                        delete[] next_req->lower;
-                        delete[] next_req->upper;
-                        delete next_req;
-                    } else {
+
+                // find out if this is the last request chuck for password crack request
+                bool finished = true;
+                for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
+                    it != active_requests.end(); it++) {
+                    request *act_req = it->second;
+                    if(act_req != NULL && act_req->requester == req->requester) {
+                        finished = false;
+                        break;
+                    }
+                }
+                if(finished) {
+                    for(int k = next_req_queue.size(); k > 0; k--) {
+                        request *next_req = next_req_queue.front();
+                        next_req_queue.pop();
+                        if(next_req->requester == req->requester) {
+                            finished = false;
+                        } 
                         next_req_queue.push(next_req);
                     }
                 }
-                // delete all corresponding request data in active_requests map
-                for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
-                    it != active_requests.end(); it++) {
-                    request *act_req = it->second; 
-                    if(act_req != NULL && act_req->requester == req->requester) {
-                        delete[] it->second->lower;
-                        delete[] it->second->upper;
-                        delete it->second;
-                        active_requests.erase(it);
-                    }
-                }
-                delete[] req->hash;
+
                 delete[] req->lower;
                 delete[] req->upper;
                 delete req;
+            }
+            inactive_workers.push(returned_id);
 
-                inactive_workers.push(returned_id);
-            } else if(payload[0] == 'c') { // crack request received for request client
-                // create new request and copy data to request struct
-                returned_id = rcounter;
-                rcounter++;
-                request *req = new request();
-                req->requester = returned_id;
-                
-                char *start_pt = strchr((char*)payload,' ')+1;
-                char *end_pt = strchr(start_pt,' ');
-                int len = end_pt-start_pt;
-                req->hash = new char[len+1];
-                memcpy(req->hash,start_pt,end_pt-start_pt);
-                req->hash[end_pt-start_pt] = '\0';
-                
-                start_pt = end_pt+1;
-                end_pt = strchr(start_pt,' ');
-                len = end_pt-start_pt;
-                req->lower = new char[len+1];
-                memcpy(req->lower,start_pt,end_pt-start_pt);
-                req->lower[end_pt-start_pt] = '\0';
-                
-                start_pt = end_pt+1;
-                len = end_pt-start_pt;
-                req->upper = new char[len+1];
-                strcpy(req->upper,start_pt);
-                
-                next_req_queue.push(req);
+            // if this is the last request then forward password not found
+            // message to the request client and delete request data
+            if(finished) {
+                //lsp_server_write(server,payload,bytes_read,req->requester);
+                delete[] req->hash;
+                ///return payload;
+                pwds.push(payload);
             }
-            
-            // when there are inactive workers and work to be done
-            // send out next crack request to next available worker
-            while(inactive_workers.size() > 0 && next_req_queue.size() > 0) {
-                // send work requests
-                request *req = next_req_queue.front();
-                next_req_queue.pop();
-                request *next_req = divide_req(req,MAX_REQ_SIZE);
-                if(next_req) { // request was bigger than MAX_REQ_SIZE so it 
-                               // was divided into 2 requests
-                    int payload_size = sprintf((char*)payload,"c %s %s %s",
-                        next_req->hash,next_req->lower,next_req->upper);
-                    printf("[%s]: %s -> %s, %s -> %s\n",req->hash,next_req->lower,
-                        next_req->upper,req->lower,req->upper);
-                    
-                    lsp_server_write(server,payload,payload_size,inactive_workers.front());
-                    active_requests[inactive_workers.front()] = next_req;
-                    next_req_queue.push(req);
-                } else { // request was small enough and was not divided into 2 chunks
-                    int payload_size = sprintf((char*)payload,"c %s %s %s",
-                        req->hash,req->lower,req->upper);
-                    printf("r[%s]: %s -> %s\n",req->hash,req->lower,req->upper);
-                    
-                    lsp_server_write(server,payload,payload_size,inactive_workers.front());
-                    active_requests[inactive_workers.front()] = req;
-                }
-                inactive_workers.pop();
-            }
-        } else { // client disconnected
-            printf("Client %d disconnected\n",returned_id);
+        } else if(payload[0] == 'f') { // worker found the correct password
+
+        	returned_id = payload[1];
             request *req = active_requests[returned_id];
             
-            if(req != NULL) { // client was an active worker
-                // add incompleted crack request back to next_req_queue
+            // send correct password to request client
+            //lsp_server_write(server,payload,bytes_read,req->requester);
+            
+            active_requests.erase(returned_id);
+            
+            // delete all corresponding request data in next_req_queue
+            for(int k = next_req_queue.size(); k > 0; k--) {
+                request *next_req = next_req_queue.front();
+                next_req_queue.pop();
+                if(next_req->requester == req->requester) {
+                    delete[] next_req->lower;
+                    delete[] next_req->upper;
+                    delete next_req;
+                } else {
+                    next_req_queue.push(next_req);
+                }
+            }
+            // delete all corresponding request data in active_requests map
+            for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
+                it != active_requests.end(); it++) {
+                request *act_req = it->second; 
+                if(act_req != NULL && act_req->requester == req->requester) {
+                    delete[] it->second->lower;
+                    delete[] it->second->upper;
+                    delete it->second;
+                    active_requests.erase(it);
+                }
+            }
+            delete[] req->hash;
+            delete[] req->lower;
+            delete[] req->upper;
+            delete req;
+
+            inactive_workers.push(returned_id);
+
+            pwds.push(payload);
+            //return payload;
+        } else if(payload[0] == 'c') { // crack request received for request client
+            // create new request and copy data to request struct
+            returned_id = rcounter;
+            rcounter--;
+            request *req = new request();
+            req->requester = returned_id;
+            
+            char *start_pt = strchr((char*)payload,' ')+1;
+            char *end_pt = strchr(start_pt,' ');
+            int len = end_pt-start_pt;
+            req->hash = new char[len+1];
+            memcpy(req->hash,start_pt,end_pt-start_pt);
+            req->hash[end_pt-start_pt] = '\0';
+            
+            start_pt = end_pt+1;
+            end_pt = strchr(start_pt,' ');
+            len = end_pt-start_pt;
+            req->lower = new char[len+1];
+            memcpy(req->lower,start_pt,end_pt-start_pt);
+            req->lower[end_pt-start_pt] = '\0';
+            
+            start_pt = end_pt+1;
+            len = end_pt-start_pt;
+            req->upper = new char[len+1];
+            strcpy(req->upper,start_pt);
+            
+            next_req_queue.push(req);
+
+            return returned_id;
+        }
+        
+        // when there are inactive workers and work to be done
+        // send out next crack request to next available worker
+        while(inactive_workers.size() > 0 && next_req_queue.size() > 0) {
+            // send work requests
+            request *req = next_req_queue.front();
+            next_req_queue.pop();
+            request *next_req = divide_req(req,MAX_REQ_SIZE);
+            if(next_req) { // request was bigger than MAX_REQ_SIZE so it 
+                           // was divided into 2 requests
+                int payload_size = sprintf((char*)payload,"c %s %s %s",
+                    next_req->hash,next_req->lower,next_req->upper);
+                printf("[%s]: %s -> %s, %s -> %s\n",req->hash,next_req->lower,
+                    next_req->upper,req->lower,req->upper);
+                
+                lsp_server_write(server,payload,payload_size,inactive_workers.front());
+                active_requests[inactive_workers.front()] = next_req;
                 next_req_queue.push(req);
-                active_requests.erase(returned_id);
-            } else {
-                // check to see if client was inactive worker
-                // and delete worker from map if it was
-                bool is_worker = false;
-                for(int k = inactive_workers.size(); k > 0; k--) {
-                    uint32_t worker_id = inactive_workers.front();
-                    inactive_workers.pop();
-                    if(worker_id == returned_id) {
-                        is_worker = true;
-                        break;
+
+                return 
+            } else { // request was small enough and was not divided into 2 chunks
+                int payload_size = sprintf((char*)payload,"c %s %s %s",
+                    req->hash,req->lower,req->upper);
+                printf("r[%s]: %s -> %s\n",req->hash,req->lower,req->upper);
+                
+                lsp_server_write(server,payload,payload_size,inactive_workers.front());
+                active_requests[inactive_workers.front()] = req;
+            }
+            inactive_workers.pop();
+        }
+    } else { // client disconnected
+        printf("Client %d disconnected\n",returned_id);
+        request *req = active_requests[returned_id];
+        
+        if(req != NULL) { // client was an active worker
+            // add incompleted crack request back to next_req_queue
+            next_req_queue.push(req);
+            active_requests.erase(returned_id);
+        } else {
+            // check to see if client was inactive worker
+            // and delete worker from map if it was
+            bool is_worker = false;
+            for(int k = inactive_workers.size(); k > 0; k--) {
+                uint32_t worker_id = inactive_workers.front();
+                inactive_workers.pop();
+                if(worker_id == returned_id) {
+                    is_worker = true;
+                    break;
+                } else {
+                    inactive_workers.push(worker_id);
+                }
+            }
+
+            // if not a worker, then client was a requester
+            if(!is_worker) {
+                // delete all data associated with request client
+                bool hash_deleted = false;
+                for(int k = next_req_queue.size(); k > 0; k--) {
+                    req = next_req_queue.front();
+                    next_req_queue.pop();
+                    if(req->requester == returned_id) {
+                        if(!hash_deleted) {
+                            delete[] req->hash;
+                            hash_deleted = true;
+                        }
+                        delete[] req->lower;
+                        delete[] req->upper;
+                        delete req;
                     } else {
-                        inactive_workers.push(worker_id);
+                        next_req_queue.push(req);
                     }
                 }
-
-                // if not a worker, then client was a requester
-                if(!is_worker) {
-                    // delete all data associated with request client
-                    bool hash_deleted = false;
-                    for(int k = next_req_queue.size(); k > 0; k--) {
-                        req = next_req_queue.front();
-                        next_req_queue.pop();
-                        if(req->requester == returned_id) {
-                            if(!hash_deleted) {
-                                delete[] req->hash;
-                                hash_deleted = true;
-                            }
-                            delete[] req->lower;
-                            delete[] req->upper;
-                            delete req;
-                        } else {
-                            next_req_queue.push(req);
-                        }
-                    }
-                    for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
-                        it != active_requests.end(); it++) {
+                for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
+                    it != active_requests.end(); it++) {
+                    req = it->second;
+                    if(req != NULL && req->requester == returned_id) {
                         req = it->second;
-                        if(req != NULL && req->requester == returned_id) {
-                            req = it->second;
-                            if(!hash_deleted) {
-                                delete[] req->hash;
-                                hash_deleted = true;
-                            }
-                            delete[] req->lower;
-                            delete[] req->upper;
-                            delete req;
-                            active_requests.erase(it);
+                        if(!hash_deleted) {
+                            delete[] req->hash;
+                            hash_deleted = true;
                         }
+                        delete[] req->lower;
+                        delete[] req->upper;
+                        delete req;
+                        active_requests.erase(it);
                     }
                 }
             }
         }
-
-
-
-
-
-	return &result;
+    }
 }

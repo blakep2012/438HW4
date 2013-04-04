@@ -10,7 +10,7 @@
 static struct timeval TIMEOUT = { 25, 0 };
 
 char **
-read_1(int *argp, CLIENT *clnt)
+read_2(int *argp, CLIENT *clnt)
 {
 	static char *clnt_res;
 
@@ -25,7 +25,7 @@ read_1(int *argp, CLIENT *clnt)
 }
 
 int *
-write_1(char **argp, CLIENT *clnt)
+write_2(char **argp, CLIENT *clnt)
 {
 	static int clnt_res;
 

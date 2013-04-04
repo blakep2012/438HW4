@@ -14,26 +14,26 @@ extern "C" {
 #endif
 
 
-#define rpcCracker 0x33312345
-#define CAVERLEE4PRES 1
+#define rpcCracker 0x33319999
+#define CAVERLEE4PRES 2
 
 #if defined(__STDC__) || defined(__cplusplus)
 #define read 1
-extern  char ** read_1(int *, CLIENT *);
-extern  char ** read_1_svc(int *, struct svc_req *);
+extern  char ** read_2(int *, CLIENT *);
+extern  char ** read_2_svc(int *, struct svc_req *);
 #define write 2
-extern  int * write_1(char **, CLIENT *);
-extern  int * write_1_svc(char **, struct svc_req *);
-extern int rpccracker_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
+extern  int * write_2(char **, CLIENT *);
+extern  int * write_2_svc(char **, struct svc_req *);
+extern int rpccracker_2_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
 #define read 1
-extern  char ** read_1();
-extern  char ** read_1_svc();
+extern  char ** read_2();
+extern  char ** read_2_svc();
 #define write 2
-extern  int * write_1();
-extern  int * write_1_svc();
-extern int rpccracker_1_freeresult ();
+extern  int * write_2();
+extern  int * write_2_svc();
+extern int rpccracker_2_freeresult ();
 #endif /* K&R C */
 
 #ifdef __cplusplus

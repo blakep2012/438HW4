@@ -17,11 +17,11 @@
 #endif
 
 static void
-rpccracker_1(struct svc_req *rqstp, register SVCXPRT *transp)
+rpccracker_2(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		int read_1_arg;
-		char *write_1_arg;
+		int read_2_arg;
+		char *write_2_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -35,13 +35,13 @@ rpccracker_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	case read:
 		_xdr_argument = (xdrproc_t) xdr_int;
 		_xdr_result = (xdrproc_t) xdr_wrapstring;
-		local = (char *(*)(char *, struct svc_req *)) read_1_svc;
+		local = (char *(*)(char *, struct svc_req *)) read_2_svc;
 		break;
 
 	case write:
 		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (char *(*)(char *, struct svc_req *)) write_1_svc;
+		local = (char *(*)(char *, struct svc_req *)) write_2_svc;
 		break;
 
 	default:
@@ -76,7 +76,7 @@ main (int argc, char **argv)
 		fprintf (stderr, "%s", "cannot create udp service.");
 		exit(1);
 	}
-	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_1, IPPROTO_UDP)) {
+	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_2, IPPROTO_UDP)) {
 		fprintf (stderr, "%s", "unable to register (rpcCracker, CAVERLEE4PRES, udp).");
 		exit(1);
 	}
@@ -86,7 +86,7 @@ main (int argc, char **argv)
 		fprintf (stderr, "%s", "cannot create tcp service.");
 		exit(1);
 	}
-	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_1, IPPROTO_TCP)) {
+	if (!svc_register(transp, rpcCracker, CAVERLEE4PRES, rpccracker_2, IPPROTO_TCP)) {
 		fprintf (stderr, "%s", "unable to register (rpcCracker, CAVERLEE4PRES, tcp).");
 		exit(1);
 	}

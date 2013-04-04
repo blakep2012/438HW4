@@ -138,9 +138,9 @@ int main(int argc, char* argv[]){
 
             // build response message
             if(pass)
-                bufLen = sprintf(buffer,"f %s",pass);
+                bufLen = sprintf(buffer,"f%i %s",id, pass);
             else 
-                bufLen = sprintf(buffer, "x");
+                bufLen = sprintf(buffer, "x%i", id);
 
             // send the response back to the server
             //lsp_client_write(client,(uint8_t*)buffer,bufLen+1);
