@@ -1,27 +1,18 @@
 #include <iostream>
-#include "lsp_client.h"
 #include "rpcCracker.h"
 
 int main(int argc, char* argv[]){
     // randomization seed requested by Dr. Stoleru
     srand(12345);
     
+	CLIENT *client;
+
     if(argc != 4) {
         printf("Usage: ./request host:port hash len\n");
         return -1;
     }
     
-    // parse ip and port from arguments
-    char* portstr = strstr(argv[1],":");
-    int port;
-    if(portstr != NULL) {
-        port = atoi(portstr+1);
-    } else {
-        printf("Usage: ./request host:port hash len\n");
-        return -1;
-    }
-    portstr[0] = NULL;
-    
+    char* host = argv[1];
     char* hash = argv[2];
     int len = atoi(argv[3]);
 
@@ -50,7 +41,8 @@ int main(int argc, char* argv[]){
     //printf("The connection to the server has been established\n");
     
     // calculate the lower and upper passwords for a certain length
-    char buffer[1024];
+	char* buffer = new char[1024];
+    //char buffer[1024];
     char lower[7];
     char upper[7];
     for(int k = 0; k < len; k++){
@@ -60,25 +52,36 @@ int main(int argc, char* argv[]){
     lower[len] = NULL;
     upper[len] = NULL;
     int buflen = sprintf(buffer, "c %s %s %s", hash, lower, upper);
-    
+    int bytes_read;
+
     //printf("sending [%d]: %s\n", buflen, buffer);
     
     // send password crack request to server
     //lsp_client_write(client,(uint8_t*)buffer,buflen+1);
-	int id = write_1(&buffer, client);
+	int id = *write_1(&buffer, client);
     //int bytes_read = lsp_client_read(client,(uint8_t*)buffer);
-	buffer = read_1(id, client);
-	bytes_read = buffer.length();
-    if(bytes_read == 0){
-        printf("Disconnected\n");
-    } else {
-        if(buffer[0] == 'x')
-            printf("Not Found\n");
-        else if (buffer[0] == 'f')
-            printf("Found: %s\n",buffer + 2);
-        else
-            printf("Unknown response: %s\n",buffer);
-    }
+
+	char *temp;
+	do{
+		//&buffer = read_1(&id, client);
+		buffer = *read_1(&id, client);
+
+		for(int i = 0; i < 1024; i++){
+			if(buffer[i] == NULL){
+				bytes_read = i;
+				break;
+			}
+		}
+		sleep(1);
+	}while(bytes_read == 0);
+          
+    if(buffer[0] == 'x')
+        printf("Not Found\n");
+    else if (buffer[0] == 'f')
+        printf("Found: %s\n",buffer + 2);
+    else
+        printf("Unknown response: %s\n",buffer);
+  
     //lsp_client_close(client);   
 	clnt_destroy(client);
     return 0;
