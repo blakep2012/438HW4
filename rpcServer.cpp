@@ -4,14 +4,26 @@
  * as a guideline for developing your own functions.
  */
 
+#include <queue>
+#include <map>
+#include <set>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <errno.h>
 #include "rpcCracker.h"
 
-typedef struct {
+#ifndef MAX_REQ_SIZE
+#define MAX_REQ_SIZE 500000
+#endif
+
+struct request{
     uint32_t requester;
     char *hash;
     char *lower;
     char *upper;
-} request;
+};
 
 // keeps track of available worker who are not currently wrokinrg
 std::queue<uint32_t> inactive_workers; 
@@ -22,7 +34,7 @@ std::map<uint32_t, request*> active_requests;
 // keeps track of next request to be worked on
 std::queue<request*> next_req_queue;
 
-std::queue<string> pwds;
+std::queue<char*> pwds;
    
 static int rcounter=-1;
 static int wcounter=0;
@@ -82,21 +94,69 @@ request* divide_req(request *req, int req_size) {
 char **
 read_1_svc(void *argp, struct svc_req *rqstp)
 {
+	int id = *(int*)argp;
+	char* payload;
+
 	static char * result;
-	if (*argp < 0) //worker read
+	if (id > 0) //worker read
 	{
-		//if available request, return crack request
-		//if not, return ""
+		
+		
+		// when there are inactive workers and work to be done
+        // send out next crack request to next available worker
+        while(inactive_workers.size() > 0 && next_req_queue.size() > 0) {
+            // send work requests
+            request *req = next_req_queue.front();
+            next_req_queue.pop();
+            request *next_req = divide_req(req, MAX_REQ_SIZE);
+            if(next_req) { // request was bigger than MAX_REQ_SIZE so it 
+                           // was divided into 2 requests
+                int payload_size = sprintf((char*)payload,"c %s %s %s",
+                    next_req->hash,next_req->lower,next_req->upper);
+                printf("[%s]: %s -> %s, %s -> %s\n",req->hash,next_req->lower,
+                    next_req->upper,req->lower,req->upper);
+                
+                //lsp_server_write(server,payload,payload_size,inactive_workers.front());
+                active_requests[inactive_workers.front()] = next_req;
+                next_req_queue.push(req);
+				
+            } else { // request was small enough and was not divided into 2 chunks
+                int payload_size = sprintf((char*)payload,"c %s %s %s",
+                    req->hash,req->lower,req->upper);
+                printf("r[%s]: %s -> %s\n",req->hash,req->lower,req->upper);
+                
+                //lsp_server_write(server,payload,payload_size,inactive_workers.front());
+                active_requests[inactive_workers.front()] = req;
+            }
+            inactive_workers.pop();
+			return &payload;
+        }		
 	} 
-	else if (*argp > 0) //request 
+	else if (id < 0) //request 
 	{
-		//if pwd cracked (found or not), return pwd
-		//if not, return ""
-
+		bool found = false;
+		
+		for(int i = 0; i < active_requests.size(); i++){	
+			if(active_requests[i]->requester == id)
+				found = true;
+		}
+		
+		if(!found){			
+			for(int k = next_req_queue.size(); k > 0; k--) {
+				request *next_req = next_req_queue.front();
+				next_req_queue.pop();
+				if(next_req->requester == id){
+					found = true;
+				} 
+				next_req_queue.push(next_req);
+			}
+		}
+		char* nothing;
+		*nothing = '\0';
+		char* password = pwds.front();
+		pwds.pop();
+		return found ? &password : &nothing;
 	}
-
-
-	return &result;
 }
 
 int *
@@ -106,32 +166,35 @@ write_1_svc(char **argp, struct svc_req *rqstp) {
 	int returned_id;
 		
     // wait for data from clients
-    int bytes_read = sizeof(argp)
-    char* payload = argp;
+    int bytes_read = sizeof(argp);
+    //char* payload = *argp;
 
     // if bytes_read > 0 then there is data to be read
     // if bytes_read == 0 then a client disconnected
 
-    if(bytes_read) {
+    if(bytes_read){
+		char* payload = *argp;
         //printf("[%d]: %s\n",returned_id, payload);
         if(payload[0] == 'j') { // worker joined the server
         	returned_id = wcounter;
 			wcounter++;
             inactive_workers.push(returned_id); // add to inactive_workers
 
-            return returned_id;
+            return &returned_id;
+
         } else if(payload[0] == 'x') { // worker did not find correct password for request
 
         	returned_id = payload[1];
             request *req = active_requests[returned_id]; 
             // request may have been deleted if password was already found or
             // the request client disconnected
+			bool finished = true;
             if (req != NULL) {
                 // delete request for active_requests
                 active_requests.erase(returned_id);
 
                 // find out if this is the last request chuck for password crack request
-                bool finished = true;
+                
                 for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
                     it != active_requests.end(); it++) {
                     request *act_req = it->second;
@@ -235,38 +298,9 @@ write_1_svc(char **argp, struct svc_req *rqstp) {
             
             next_req_queue.push(req);
 
-            return returned_id;
+            return &returned_id;
         }
         
-        // when there are inactive workers and work to be done
-        // send out next crack request to next available worker
-        while(inactive_workers.size() > 0 && next_req_queue.size() > 0) {
-            // send work requests
-            request *req = next_req_queue.front();
-            next_req_queue.pop();
-            request *next_req = divide_req(req,MAX_REQ_SIZE);
-            if(next_req) { // request was bigger than MAX_REQ_SIZE so it 
-                           // was divided into 2 requests
-                int payload_size = sprintf((char*)payload,"c %s %s %s",
-                    next_req->hash,next_req->lower,next_req->upper);
-                printf("[%s]: %s -> %s, %s -> %s\n",req->hash,next_req->lower,
-                    next_req->upper,req->lower,req->upper);
-                
-                lsp_server_write(server,payload,payload_size,inactive_workers.front());
-                active_requests[inactive_workers.front()] = next_req;
-                next_req_queue.push(req);
-
-                return 
-            } else { // request was small enough and was not divided into 2 chunks
-                int payload_size = sprintf((char*)payload,"c %s %s %s",
-                    req->hash,req->lower,req->upper);
-                printf("r[%s]: %s -> %s\n",req->hash,req->lower,req->upper);
-                
-                lsp_server_write(server,payload,payload_size,inactive_workers.front());
-                active_requests[inactive_workers.front()] = req;
-            }
-            inactive_workers.pop();
-        }
     } else { // client disconnected
         printf("Client %d disconnected\n",returned_id);
         request *req = active_requests[returned_id];
@@ -309,8 +343,7 @@ write_1_svc(char **argp, struct svc_req *rqstp) {
                         next_req_queue.push(req);
                     }
                 }
-                for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); 
-                    it != active_requests.end(); it++) {
+                for(std::map<uint32_t, request*>::iterator it = active_requests.begin(); it != active_requests.end(); it++) {
                     req = it->second;
                     if(req != NULL && req->requester == returned_id) {
                         req = it->second;
@@ -328,3 +361,4 @@ write_1_svc(char **argp, struct svc_req *rqstp) {
         }
     }
 }
+
