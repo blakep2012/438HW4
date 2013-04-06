@@ -1,35 +1,35 @@
 CC = g++
+CF = gcc
 CFLAGS = -g -DRPC_SVC_FG
 
 all: server worker request
 
-server: server.o 
-	$(CC) $(CFLAGS) -o server server.o rpc_xdr.o -lnsl
+server: server.o rpcCracker_svc.o
+	$(CC) $(CFLAGS) -o server server.o -lnsl
 
-worker: worker.o
+worker: worker.o rpcCracker_clnt.o
 	$(CC) $(CFLAGS) -o worker worker.o rpcCracker_clnt.o -lnsl
 
 request: request.o rpcCracker_clnt.o
 	$(CC) $(CFLAGS) -o request request.o rpcCracker_clnt.o -lnsl
 
 rpcCracker_svc.o: rpcCracker.h
-	$(CC) $(CFLAGS) -c rpcCracker_svc.c
+	$(CF) $(CFLAGS) -c rpcCracker_svc.c
 
 rpcCracker_clnt.o: rpcCracker.h
-	$(CC) $(CFLAGS) -c rpcCracker_clnt.c
+	$(CF) $(CFLAGS) -c rpcCracker_clnt.c
 
-server.o:  rpcServer.cpp rpcCracker.h  
-	$(CC) $(CFLAGS) -c rpcServer.cpp 
+server.o:  server.cpp rpcCracker.h
+	$(CC) $(CFLAGS) -c server.cpp 
 
 worker.o: worker.cpp rpcCracker.h
 	$(CC) -$(CFLAGS) -c worker.cpp
 
-request.o: requst.cpp rpcCracker.h
+request.o: request.cpp rpcCracker.h
 	$(CC) $(CFLAGS) -c request.cpp
 
 rpcCracker.h: rpcCracker.x
 	rpcgen -C rpcCracker.x
 
-
 clean:
-	rm -f rpcClient.cpp rpcClient.o rpcCracker_clnt.* rpcCracker_svc.* rpcCracker.h
+	rm -f rpcClient.cpp rpcClient.o rpcCracker_clnt.* rpcCracker_svc.* rpcCracker.h server.o

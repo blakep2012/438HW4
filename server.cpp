@@ -92,7 +92,7 @@ request* divide_req(request *req, int req_size) {
 };
 
 char **
-read_1_svc(void *argp, struct svc_req *rqstp)
+read_2_svc(void *argp, struct svc_req *rqstp)
 {
 	int id = *(int*)argp;
 	char* payload;
@@ -160,7 +160,7 @@ read_1_svc(void *argp, struct svc_req *rqstp)
 }
 
 int *
-write_1_svc(char **argp, struct svc_req *rqstp) {
+write_2_svc(char **argp, struct svc_req *rqstp) {
 	
 	static int  result;
 	int returned_id;
